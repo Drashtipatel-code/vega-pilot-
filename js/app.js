@@ -473,7 +473,96 @@ document.addEventListener('DOMContentLoaded', () => {
         mobileArmBtn.className = 'mobile-fab-btn btn-primary';
       }
     }
+    // Update Artificial Horizon PFD gyro & vehicle health telemetry
+    const pfdHorizon = document.getElementById('pfd-horizon-surface');
+    const pfdRoll = document.getElementById('pfd-roll-val');
+    const pfdPitch = document.getElementById('pfd-pitch-val');
+    const vehRoll = document.getElementById('veh-roll');
+    const vehPitch = document.getElementById('veh-pitch');
+
+    if (pfdHorizon) {
+      pfdHorizon.style.transform = `rotate(${state.roll}deg) translateY(${state.pitch * 1.6}px)`;
+    }
+    if (pfdRoll) pfdRoll.textContent = `${state.roll > 0 ? '+' : ''}${state.roll}°`;
+    if (pfdPitch) pfdPitch.textContent = `${state.pitch > 0 ? '+' : ''}${state.pitch}°`;
+    if (vehRoll) vehRoll.textContent = `${state.roll > 0 ? '+' : ''}${state.roll}°`;
+    if (vehPitch) vehPitch.textContent = `${state.pitch > 0 ? '+' : ''}${state.pitch}°`;
+
+    // Update Checklist Modal Live Values
+    const chkBat = document.getElementById('chk-val-bat');
+    const chkGnss = document.getElementById('chk-val-gnss');
+    const chkRssi = document.getElementById('chk-val-rssi');
+    if (chkBat) chkBat.textContent = `PASS (${state.voltage}V)`;
+    if (chkGnss) chkGnss.textContent = `PASS (${state.satellites} Sats)`;
+    if (chkRssi) chkRssi.textContent = `PASS (${state.rssi}%)`;
   });
+
+  // Feature 1: Fault Injection Buttons
+  document.querySelectorAll('.btn-fault').forEach(btn => {
+    btn.addEventListener('click', () => {
+      telemetry.injectFault(btn.dataset.fault);
+    });
+  });
+
+  // Feature 4: Toggle PiP Camera Feed
+  const pipCamera = document.getElementById('dji-pip-camera');
+  const btnToggleCamera = document.getElementById('fab-toggle-camera');
+  const btnTogglePip = document.getElementById('btn-toggle-pip');
+
+  if (btnToggleCamera && pipCamera) {
+    btnToggleCamera.addEventListener('click', () => {
+      const isVisible = pipCamera.style.display !== 'none';
+      pipCamera.style.display = isVisible ? 'none' : 'flex';
+      btnToggleCamera.classList.toggle('active', !isVisible);
+    });
+  }
+
+  if (btnTogglePip && pipCamera) {
+    btnTogglePip.addEventListener('click', () => {
+      pipCamera.style.display = 'none';
+      if (btnToggleCamera) btnToggleCamera.classList.remove('active');
+    });
+  }
+
+  // Feature 3: Toggle Primary Flight Display (PFD)
+  const pfdWidget = document.getElementById('dji-pfd-widget');
+  const btnTogglePfd = document.getElementById('fab-toggle-pfd');
+
+  if (btnTogglePfd && pfdWidget) {
+    btnTogglePfd.addEventListener('click', () => {
+      const isVisible = pfdWidget.style.display !== 'none';
+      pfdWidget.style.display = isVisible ? 'none' : 'flex';
+      btnTogglePfd.classList.toggle('active', !isVisible);
+    });
+  }
+
+  // Feature 2: Pre-Flight Safety Checklist Modal
+  const checklistModal = document.getElementById('checklist-modal');
+  const btnOpenChecklist = document.getElementById('btn-open-checklist');
+  const mobileBtnChecklist = document.getElementById('mobile-btn-checklist');
+  const btnCloseChecklist = document.getElementById('btn-close-checklist');
+  const btnCancelChecklist = document.getElementById('btn-checklist-cancel');
+  const btnProceedArm = document.getElementById('btn-proceed-to-arm');
+
+  function openChecklist() {
+    if (checklistModal) checklistModal.classList.add('active');
+  }
+
+  function closeChecklist() {
+    if (checklistModal) checklistModal.classList.remove('active');
+  }
+
+  if (btnOpenChecklist) btnOpenChecklist.addEventListener('click', openChecklist);
+  if (mobileBtnChecklist) mobileBtnChecklist.addEventListener('click', openChecklist);
+  if (btnCloseChecklist) btnCloseChecklist.addEventListener('click', closeChecklist);
+  if (btnCancelChecklist) btnCancelChecklist.addEventListener('click', closeChecklist);
+
+  if (btnProceedArm) {
+    btnProceedArm.addEventListener('click', () => {
+      closeChecklist();
+      mission.handleArmButtonClick();
+    });
+  }
 
   // 8. Simple-Language [?] Information Explainer System
   const infoModal = document.getElementById('info-explainer-modal');
@@ -511,24 +600,20 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 9. Mobile Hamburger Drawer & Backdrop
-  const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+  // 9. Full-Screen Mobile Terminal Sheet
   const btnCloseSidebar = document.getElementById('btn-close-sidebar');
 
   if (mobileMenuBtn && sidebar) {
     mobileMenuBtn.addEventListener('click', () => {
       sidebar.classList.add('open');
-      if (sidebarBackdrop) sidebarBackdrop.classList.add('active');
     });
   }
 
   function closeMobileSidebar() {
     if (sidebar) sidebar.classList.remove('open');
-    if (sidebarBackdrop) sidebarBackdrop.classList.remove('active');
   }
 
   if (btnCloseSidebar) btnCloseSidebar.addEventListener('click', closeMobileSidebar);
-  if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', closeMobileSidebar);
 
   // 10. Mobile Bottom Flight Action Dock
   const mobileBtnArm = document.getElementById('mobile-btn-arm');

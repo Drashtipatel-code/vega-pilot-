@@ -1059,19 +1059,7 @@ input[type="range"].safety-slider::-webkit-slider-thumb {
   background: rgba(255, 255, 255, 0.1);
 }
 
-/* Mobile Sidebar Drawer & Backdrop */
-.sidebar-backdrop {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(4px);
-  z-index: 98;
-}
 
-.sidebar-backdrop.active {
-  display: block;
-}
 
 .sidebar-top-mobile-header {
   display: flex;
@@ -1128,6 +1116,333 @@ input[type="range"].safety-slider::-webkit-slider-thumb {
   cursor: pointer;
 }
 
+/* VEGA Flight Terminal Mobile Brand Header */
+.terminal-brand-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.terminal-brand-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+}
+
+.terminal-brand-sub {
+  font-size: 11px;
+  color: var(--accent-cyan);
+  font-family: var(--font-mono);
+}
+
+.nav-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.nav-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Feature 1: Hackathon Fault Injection Bar */
+.fault-injection-bar {
+  background: linear-gradient(135deg, rgba(19, 30, 48, 0.9) 0%, rgba(26, 40, 62, 0.9) 100%);
+  border: 1px solid rgba(0, 210, 255, 0.25);
+  border-radius: var(--radius-md);
+  padding: 12px 18px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+
+.fault-bar-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.fault-bar-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fault-button-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-fault {
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 10px;
+}
+
+/* Feature 4: Picture-in-Picture (PiP) AI Camera Feed */
+.dji-pip-camera {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  width: 195px;
+  height: 125px;
+  background: #03070d;
+  border: 1.5px solid rgba(0, 210, 255, 0.45);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: 0 8px 26px rgba(0,0,0,0.75);
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+}
+
+.pip-camera-header {
+  background: rgba(7, 12, 20, 0.92);
+  padding: 4px 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.pip-rec-dot {
+  color: #ff3b57;
+  font-weight: 800;
+  animation: glow-pulse 1s infinite;
+}
+
+.pip-timer {
+  color: #ffffff;
+}
+
+.pip-minimize-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0 4px;
+}
+.pip-minimize-btn:hover {
+  color: #fff;
+}
+
+.pip-video-screen {
+  flex: 1;
+  position: relative;
+  background: radial-gradient(circle at 50% 50%, #15273b 0%, #070e17 100%);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pip-crosshair {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border: 1px solid rgba(0, 210, 255, 0.35);
+  border-radius: 50%;
+}
+.pip-crosshair::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -6px;
+  right: -6px;
+  height: 1px;
+  background: rgba(0, 210, 255, 0.35);
+}
+.pip-crosshair::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -6px;
+  bottom: -6px;
+  width: 1px;
+  background: rgba(0, 210, 255, 0.35);
+}
+
+.pip-ai-target-box {
+  position: absolute;
+  top: 18px;
+  left: 28px;
+  width: 58px;
+  height: 48px;
+  border: 1.5px solid var(--accent-green);
+  border-radius: 2px;
+  box-shadow: 0 0 10px rgba(0, 229, 153, 0.5);
+  animation: target-track 3.5s infinite alternate ease-in-out;
+}
+
+@keyframes target-track {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(14px, 10px); }
+}
+
+.pip-ai-landing-box {
+  position: absolute;
+  bottom: 14px;
+  right: 22px;
+  width: 44px;
+  height: 38px;
+  border: 1.5px dashed var(--accent-cyan);
+  border-radius: 2px;
+}
+
+.pip-target-label {
+  position: absolute;
+  top: -14px;
+  left: 0;
+  background: rgba(0, 229, 153, 0.9);
+  color: #070c14;
+  font-size: 8px;
+  font-weight: 800;
+  padding: 1px 4px;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+
+.pip-telemetry-overlay {
+  position: absolute;
+  bottom: 4px;
+  left: 6px;
+  right: 6px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 8px;
+  font-family: var(--font-mono);
+  color: rgba(255,255,255,0.7);
+}
+
+/* Feature 3: Primary Flight Display (PFD) Gyro Widget */
+.dji-pfd-widget {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  width: 135px;
+  height: 135px;
+  background: rgba(13, 21, 34, 0.94);
+  border: 1.5px solid rgba(0, 210, 255, 0.45);
+  border-radius: 50%;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.65);
+  z-index: 500;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(12px);
+}
+
+.pfd-title {
+  position: absolute;
+  top: 6px;
+  font-size: 8px;
+  font-weight: 800;
+  color: var(--accent-cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  z-index: 10;
+}
+
+.pfd-gyro-ring {
+  width: 105px;
+  height: 105px;
+  border-radius: 50%;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.pfd-horizon {
+  position: absolute;
+  inset: -45px;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.15s ease-out;
+}
+
+.pfd-sky {
+  flex: 1;
+  background: linear-gradient(180deg, #0288d1 0%, #29b6f6 100%);
+}
+
+.pfd-ground {
+  flex: 1;
+  background: linear-gradient(180deg, #795548 0%, #4e342e 100%);
+}
+
+.pfd-horizon-line {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #ffffff;
+}
+
+.pfd-aircraft-symbol {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 36px;
+  height: 8px;
+  border-bottom: 3px solid #ffeb3b;
+  border-left: 3px solid #ffeb3b;
+  border-right: 3px solid #ffeb3b;
+  z-index: 5;
+}
+
+.pfd-data-strip {
+  position: absolute;
+  bottom: 6px;
+  display: flex;
+  gap: 8px;
+  font-size: 9px;
+  font-family: var(--font-mono);
+  color: #fff;
+  z-index: 10;
+}
+
+/* Feature 2: Pre-Flight Checklist Modal */
+.checklist-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--bg-darker);
+  padding: 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.check-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.check-row:last-child {
+  border-bottom: none;
+}
+
+.check-icon {
+  font-weight: 800;
+  font-size: 14px;
+  margin-right: 10px;
+}
+
 /* Responsive Media Queries */
 @media (max-width: 1100px) {
   .hud-grid {
@@ -1143,19 +1458,39 @@ input[type="range"].safety-slider::-webkit-slider-thumb {
     display: block;
   }
 
+  /* FULL-SCREEN Terminal Sheet on Mobile / Tablet */
   aside.sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    z-index: 999;
-    transform: translateX(-100%);
-    box-shadow: 10px 0 40px rgba(0, 0, 0, 0.7);
-    padding-top: 20px;
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    max-width: 100% !important;
+    z-index: 9999 !important;
+    background: #080e18 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 24px 20px 80px 20px !important;
+    transform: translateY(-100%) !important;
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    overflow-y: auto !important;
+    box-shadow: none !important;
   }
 
   aside.sidebar.open {
-    transform: translateX(0);
+    transform: translateY(0) !important;
+  }
+
+  aside.sidebar .nav-item {
+    padding: 14px 16px !important;
+    margin-bottom: 8px !important;
+    background: var(--bg-surface) !important;
+    border: 1px solid var(--border-subtle) !important;
+  }
+
+  aside.sidebar .nav-item.active {
+    border-color: var(--accent-cyan) !important;
+    background: var(--bg-surface-elevated) !important;
   }
 
   main.main-viewport {
@@ -1173,19 +1508,40 @@ input[type="range"].safety-slider::-webkit-slider-thumb {
   }
 
   header {
-    padding: 10px 14px;
+    padding: 10px 14px !important;
+    height: 56px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+
+  .brand-section {
+    gap: 10px !important;
   }
 
   .brand-title-group h1 {
-    font-size: 15px;
+    font-size: 16px !important;
   }
 
-  .brand-title-group p {
-    display: none;
+  .brand-title-group p, .badge-tag, .clock-display, #btn-toggle-comms, #header-sats-chip {
+    display: none !important;
+  }
+
+  .header-status-panel {
+    gap: 0 !important;
+  }
+
+  .status-chip {
+    padding: 4px 10px !important;
+    font-size: 11px !important;
+  }
+
+  #header-status-text {
+    font-size: 11px !important;
   }
 
   main.main-viewport {
-    padding: 12px 12px 80px 12px; /* Bottom padding for fixed flight bar */
+    padding: 12px 12px 84px 12px !important; /* Bottom clearance for docked flight bar */
   }
 
   .hud-grid {
@@ -1200,5 +1556,18 @@ input[type="range"].safety-slider::-webkit-slider-thumb {
   .map-viewport-wrapper {
     height: 320px;
   }
+
+  .fault-bar-inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .dji-pip-camera {
+    width: 150px;
+    height: 95px;
+    bottom: 8px;
+    left: 8px;
+  }
 }
+
 

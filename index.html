@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>VEGAPilot | Ground Control Station</title>
-  <meta name="description" content="VEGAPilot Ground Control Station - DJI-Grade Drone Mission & Telemetry Dashboard with Real Satellite Map, Failsafe Monitoring, and Waypoint Planning." />
+  <meta name="description" content="VEGAPilot Ground Control Station - DJI-Grade Autonomous UAV Mission & Telemetry Dashboard with Real Satellite Map, AI Target Detection, and Safety Failsafes." />
 
   <!-- Google Fonts: Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -22,21 +22,21 @@
   <!-- Header Bar -->
   <header>
     <div class="brand-section">
-      <button class="mobile-menu-toggle" id="mobile-menu-btn" title="Open Navigation Menu">
+      <button class="mobile-menu-toggle" id="mobile-menu-btn" title="Open Flight Terminal">
         <span>☰</span>
       </button>
       <div class="brand-logo-icon">▲</div>
       <div class="brand-title-group">
-        <h1>VEGAPilot <span class="badge-tag">GCS v2.5</span></h1>
-        <p>NiDAR Competition · Navlakhi Arena Flight Deck</p>
+        <h1>VEGAPilot</h1>
+        <p class="hide-mobile">NiDAR Competition · Navlakhi Arena Flight Deck</p>
       </div>
     </div>
 
-    <!-- Quick Status HUD Strip (Always visible on mobile & desktop like DJI Status Bar) -->
+    <!-- Quick Status HUD Strip -->
     <div class="header-status-panel">
       <div class="status-chip" id="header-connection-chip">
         <span class="status-dot dot-green" id="header-status-dot"></span>
-        <span id="header-status-text">TELEMETRY ONLINE</span>
+        <span id="header-status-text">ONLINE</span>
       </div>
       <div class="status-chip hide-mobile" id="header-sats-chip">
         <span class="text-cyan">🛰️ <b id="hdr-sats-count">18 Sats</b></span>
@@ -54,33 +54,51 @@
 
   <!-- Main App Layout -->
   <div class="app-layout">
-    <!-- Sidebar Navigation Drawer (Slide-out on mobile) -->
+    <!-- Full-Screen Mobile Terminal Sheet / Desktop Sidebar -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-top-mobile-header show-mobile">
-        <span style="font-weight: 700; color: #fff;">Navigation Menu</span>
-        <button class="btn-icon-close" id="btn-close-sidebar">✕</button>
+        <div class="terminal-brand-header">
+          <div class="terminal-brand-title">VEGA Flight Terminal</div>
+          <div class="terminal-brand-sub">Mission Operations & Navigation Deck</div>
+        </div>
+        <button class="btn-icon-close" id="btn-close-sidebar" aria-label="Close Terminal">✕</button>
       </div>
 
       <div class="nav-group">
         <div class="nav-item active" data-section="overview">
           <span class="nav-icon">▦</span>
-          <span>Flight Overview</span>
+          <div>
+            <div class="nav-title">Flight Overview</div>
+            <div class="nav-desc show-mobile">Live telemetry, tactical satellite map & controls</div>
+          </div>
         </div>
         <div class="nav-item" data-section="mission">
           <span class="nav-icon">✈</span>
-          <span>Mission Planner</span>
+          <div>
+            <div class="nav-title">Mission Planner</div>
+            <div class="nav-desc show-mobile">Autonomous route waypoints & pattern presets</div>
+          </div>
         </div>
         <div class="nav-item" data-section="vehicle">
           <span class="nav-icon">◉</span>
-          <span>Vehicle Health</span>
+          <div>
+            <div class="nav-title">Vehicle Health</div>
+            <div class="nav-desc show-mobile">Sensor diagnostics, ESC telemetry & IMU attitude</div>
+          </div>
         </div>
         <div class="nav-item" data-section="logs">
           <span class="nav-icon">▤</span>
-          <span>Flight Logs</span>
+          <div>
+            <div class="nav-title">Flight Logs</div>
+            <div class="nav-desc show-mobile">Timestamped audit trail & CSV/JSON export</div>
+          </div>
         </div>
         <div class="nav-item" data-section="config" id="nav-item-config">
           <span class="nav-icon">⚙️</span>
-          <span>GCS Config</span>
+          <div>
+            <div class="nav-title">GCS Config</div>
+            <div class="nav-desc show-mobile">GPS arena center, geofence radius & battery limits</div>
+          </div>
         </div>
       </div>
 
@@ -109,8 +127,7 @@
       </div>
     </aside>
 
-    <!-- Sidebar Backdrop Overlay on Mobile -->
-    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
 
     <!-- Main Viewport Area -->
     <main class="main-viewport">
@@ -124,6 +141,9 @@
             <p>Real-time vehicle telemetry, satellite positioning, and failsafe supervision</p>
           </div>
           <div class="quick-flight-controls hide-mobile">
+            <button class="btn-action btn-ghost" id="btn-open-checklist" title="Open Pre-Flight Safety Verification">
+              📋 Pre-Flight Checklist
+            </button>
             <select id="hud-mode-select" class="table-select" title="Switch Flight Mode">
               <option value="AUTO">AUTO (Mission)</option>
               <option value="GUIDED">GUIDED</option>
@@ -216,28 +236,48 @@
           </div>
         </div>
 
+        <!-- FEATURE 1: HACKATHON FAULT INJECTION & SAFETY SIMULATION BAR -->
+        <div class="card fault-injection-bar" style="margin-bottom: 20px;">
+          <div class="fault-bar-inner">
+            <div class="fault-bar-header">
+              <span style="font-size: 16px;">⚡</span>
+              <div>
+                <strong>Judge Demo: Real-Time Fault Injection & Safety Watchdog</strong>
+                <div class="small text-muted">Test autonomous failsafe triggers live during evaluation</div>
+              </div>
+            </div>
+            <div class="fault-button-group">
+              <button class="btn-sm btn-danger btn-fault" data-fault="battery" title="Inject Critical Battery (14.2%)">⚠️ Low Battery (14%)</button>
+              <button class="btn-sm btn-danger btn-fault" data-fault="comms" title="Simulate Radio Signal Loss">📡 Cut Radio Comms</button>
+              <button class="btn-sm btn-warning btn-fault" data-fault="geofence" title="Simulate Geofence Boundary Breach">🛑 Geofence Breach</button>
+              <button class="btn-sm btn-warning btn-fault" data-fault="motor" title="Simulate Motor 3 Overheat Alert">🔥 ESC Overheat</button>
+              <button class="btn-sm btn-primary btn-fault" data-fault="clear" title="Reset All Systems to NOMINAL">🔄 Reset Nominal</button>
+            </div>
+          </div>
+        </div>
+
         <!-- Middle Section: Tactical Arena Map & Vehicle Status -->
         <div class="middle-split-layout">
-          <!-- Arena Map Card (DJI-Style Floating Controls) -->
+          <!-- Arena Map Card (DJI-Style Floating Controls + PiP Camera + PFD) -->
           <div class="card map-card">
             <div class="map-card-topbar">
               <div class="card-title">
                 <span>Tactical Arena Flight Deck</span>
-                <span class="badge-tag" id="map-current-layer-label">🛰️ Real Satellite</span>
+                <span class="badge-tag" id="map-current-layer-label">🛰️ Satellite (Hybrid)</span>
               </div>
               <div class="small text-muted hide-mobile">
-                Geofence: Navlakhi Arena (90m x 90m) <span class="info-help-btn" data-help="geofence">?</span>
+                Geofence: Navlakhi Arena (110m x 120m) <span class="info-help-btn" data-help="geofence">?</span>
               </div>
             </div>
 
             <!-- Viewport Container with DJI Floating Action Buttons (FABs) -->
             <div class="map-viewport-wrapper">
-              <!-- Real Interactive Leaflet OpenStreetMap View -->
+              <!-- Real Interactive Leaflet OpenStreetMap / Satellite View -->
               <div id="map-view"></div>
 
               <!-- DJI-Style Floating Action Buttons (FABs) -->
               <div class="dji-map-controls">
-                <button class="dji-fab" id="fab-map-layer" title="Switch Map Layer (Satellite / Streets / Vibrant)">
+                <button class="dji-fab" id="fab-map-layer" title="Switch Map Layer (Satellite / Streets / Esri)">
                   <span>🛰️</span>
                 </button>
                 <button class="dji-fab active" id="fab-follow" title="Lock & Follow Drone">
@@ -246,9 +286,55 @@
                 <button class="dji-fab" id="fab-fit-arena" title="Fit Entire Arena Geofence">
                   <span>⛶</span>
                 </button>
+                <button class="dji-fab" id="fab-toggle-camera" title="Toggle Payload Camera Feed (PiP)">
+                  <span>📷</span>
+                </button>
+                <button class="dji-fab" id="fab-toggle-pfd" title="Toggle Gyro Attitude PFD Horizon">
+                  <span>🧭</span>
+                </button>
                 <button class="dji-fab" id="fab-toggle-radar" title="Toggle Synthetic Arena Grid">
                   <span>📡</span>
                 </button>
+              </div>
+
+              <!-- FEATURE 4: PICTURE-IN-PICTURE (PiP) PAYLOAD CAMERA FEED WITH AI TARGET DETECTION -->
+              <div class="dji-pip-camera" id="dji-pip-camera">
+                <div class="pip-camera-header">
+                  <span class="pip-rec-dot">● REC</span>
+                  <span class="pip-timer" id="pip-rec-timer">00:04:12</span>
+                  <button class="pip-minimize-btn" id="btn-toggle-pip" title="Close Camera Feed">✕</button>
+                </div>
+                <div class="pip-video-screen">
+                  <div class="pip-crosshair"></div>
+                  <!-- AI Target Detection Bounding Box -->
+                  <div class="pip-ai-target-box">
+                    <span class="pip-target-label">🎯 Arena Marker #A1 · 98.4%</span>
+                  </div>
+                  <div class="pip-ai-landing-box">
+                    <span class="pip-target-label">⚓ Home Pad [LOCKED]</span>
+                  </div>
+                  <div class="pip-telemetry-overlay">
+                    <span>4K · 60FPS</span>
+                    <span>AI VISION ACTIVE</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- FEATURE 3: PRIMARY FLIGHT DISPLAY (PFD) / ARTIFICIAL HORIZON WIDGET -->
+              <div class="dji-pfd-widget" id="dji-pfd-widget" style="display: none;">
+                <div class="pfd-title">Primary Flight Display</div>
+                <div class="pfd-gyro-ring">
+                  <div class="pfd-horizon" id="pfd-horizon-surface">
+                    <div class="pfd-sky"></div>
+                    <div class="pfd-ground"></div>
+                    <div class="pfd-horizon-line"></div>
+                  </div>
+                  <div class="pfd-aircraft-symbol"></div>
+                </div>
+                <div class="pfd-data-strip">
+                  <span>ROLL: <b id="pfd-roll-val">0.0°</b></span>
+                  <span>PITCH: <b id="pfd-pitch-val">0.0°</b></span>
+                </div>
               </div>
 
               <!-- Alternative 2D Synthetic Arena Grid (Switchable) -->
@@ -454,8 +540,8 @@
         <div class="hud-grid">
           <div class="card">
             <div class="card-title">IMU / Gyroscope</div>
-            <div class="rowline"><span>Roll</span><strong class="mono">+2.1°</strong></div>
-            <div class="rowline"><span>Pitch</span><strong class="mono">+1.4°</strong></div>
+            <div class="rowline"><span>Roll</span><strong class="mono" id="veh-roll">+2.1°</strong></div>
+            <div class="rowline"><span>Pitch</span><strong class="mono" id="veh-pitch">+1.4°</strong></div>
             <div class="rowline"><span>Vibration (X/Y/Z)</span><strong class="text-green">0.08g (Normal)</strong></div>
           </div>
           <div class="card">
@@ -631,15 +717,62 @@
 
   <!-- DOCKED MOBILE BOTTOM FLIGHT DECK (Visible only on mobile for 1-thumb DJI control) -->
   <div class="mobile-bottom-flight-bar show-mobile">
+    <button class="mobile-fab-btn btn-ghost" id="mobile-btn-checklist">
+      <span>📋 CHECK</span>
+    </button>
     <button class="mobile-fab-btn btn-primary" id="mobile-btn-arm">
-      <span id="mobile-arm-label">ARM MOTORS</span>
+      <span id="mobile-arm-label">ARM</span>
     </button>
     <button class="mobile-fab-btn btn-warning" id="mobile-btn-rtl">
-      <span>RTL HOME</span>
+      <span>RTL</span>
     </button>
     <button class="mobile-fab-btn btn-danger" id="mobile-btn-abort">
       <span>ABORT</span>
     </button>
+  </div>
+
+  <!-- FEATURE 2: MODAL PRE-FLIGHT SAFETY CHECKLIST (DGCA / Competition Standard) -->
+  <div class="modal-backdrop" id="checklist-modal">
+    <div class="modal-dialog">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <h3 style="margin: 0; color: var(--accent-green);">📋 Pre-Flight Safety Verification</h3>
+        <button class="btn-icon-close" id="btn-close-checklist">✕</button>
+      </div>
+      <p class="small text-muted" style="margin-bottom: 16px;">
+        Automated safety checks must pass before motor arming is authorized.
+      </p>
+      <div class="checklist-items-list">
+        <div class="check-row">
+          <span class="check-icon text-green">✓</span>
+          <span style="flex: 1;">Battery Pack Voltage (&gt;22.8V Healthy 6S)</span>
+          <strong class="text-green" id="chk-val-bat">PASS (24.1V)</strong>
+        </div>
+        <div class="check-row">
+          <span class="check-icon text-green">✓</span>
+          <span style="flex: 1;">GNSS 3D DGPS Satellite Lock (&gt;12 Sats)</span>
+          <strong class="text-green" id="chk-val-gnss">PASS (18 Sats)</strong>
+        </div>
+        <div class="check-row">
+          <span class="check-icon text-green">✓</span>
+          <span style="flex: 1;">Arena Geofence Safety Cage Active</span>
+          <strong class="text-green">PASS (110m x 120m)</strong>
+        </div>
+        <div class="check-row">
+          <span class="check-icon text-green">✓</span>
+          <span style="flex: 1;">RF Telemetry Link RSSI (&gt;80%)</span>
+          <strong class="text-green" id="chk-val-rssi">PASS (98%)</strong>
+        </div>
+        <div class="check-row">
+          <input type="checkbox" id="chk-arena-clear" checked style="accent-color: var(--accent-green); cursor: pointer; width: 16px; height: 16px;" />
+          <label for="chk-arena-clear" style="cursor: pointer; flex: 1; margin-left: 8px;">Airspace and landing zone clear of personnel</label>
+          <strong class="text-green">VERIFIED</strong>
+        </div>
+      </div>
+      <div class="modal-btn-row" style="margin-top: 20px;">
+        <button class="btn-ghost" id="btn-checklist-cancel">Cancel</button>
+        <button class="btn-primary" id="btn-proceed-to-arm">Authorize &amp; Proceed to Arm →</button>
+      </div>
+    </div>
   </div>
 
   <!-- MODAL: SIMPLE-LANGUAGE [?] INFORMATION EXPLAINER -->

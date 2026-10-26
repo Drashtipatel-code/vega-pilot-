@@ -168,6 +168,12 @@ class TelemetryEngine {
         if (diffHeading < -180) diffHeading += 360;
         this.state.heading = Math.round((this.state.heading + diffHeading * 0.25 + 360) % 360);
 
+        // Dynamic roll and pitch simulation for Artificial Horizon PFD
+        const targetRoll = Math.max(-25, Math.min(25, -diffHeading * 0.7));
+        this.state.roll = +(this.state.roll * 0.75 + targetRoll * 0.25).toFixed(1);
+        const targetPitch = Math.max(-15, Math.min(15, this.state.verticalSpeed * 2.0 - (this.state.groundSpeed * 0.3)));
+        this.state.pitch = +(this.state.pitch * 0.75 + targetPitch * 0.25).toFixed(1);
+
         if (dist2D < 1.5) {
           // Reached waypoint
           this.logger.log('NAV', `Reached Waypoint ${this.state.currentWaypointIndex + 1} (${currentWP.action})`, 'SUCCESS');
@@ -352,6 +358,46 @@ class TelemetryEngine {
     this.state.currentWaypointIndex = 0;
     this.updateMissionProgress();
     this.logger.log('MISSION', `Updated mission waypoints (${newWaypoints.length} points loaded)`, 'INFO');
+    this.notify();
+  }
+
+  injectFault(type) {
+    if (type === 'battery') {
+      this.state.batteryPercent = 14.2;
+      this.state.batteryCritical = true;
+      this.state.failsafes.battery = 'CRITICAL';
+      this.logger.log('SAFETY', 'FAULT INJECTION: Simulated Critical Low Battery (14.2%). Triggering Emergency RTL!', 'ERROR');
+      this.setFlightMode('RTL');
+    } else if (type === 'comms') {
+      this.state.connected = false;
+      this.state.failsafes.comms = 'LINK_LOSS';
+      this.logger.log('SAFETY', 'FAULT INJECTION: Telemetry Link Cut. Loss-of-Signal Failsafe Activated!', 'ERROR');
+    } else if (type === 'geofence') {
+      this.state.lat += 0.0006; // Push outside arena
+      this.state.failsafes.geofence = 'BREACH';
+      this.logger.log('SAFETY', 'FAULT INJECTION: Geofence Breach Triggered! Vehicle Outside Arena Perimeter.', 'ERROR');
+    } else if (type === 'motor') {
+      this.state.health.fc = 'WARNING';
+      this.state.health.esc = 'MOTOR 3 ESC OVERHEAT (85°C)';
+      this.state.health.alertsCount += 1;
+      this.logger.log('SAFETY', 'FAULT INJECTION: Motor 3 ESC Overheat Alert (85°C)!', 'WARN');
+    } else if (type === 'clear') {
+      this.state.connected = true;
+      this.state.batteryPercent = 84;
+      this.state.batteryCritical = false;
+      this.state.batteryWarning = false;
+      this.state.failsafes.battery = 'CLEAR';
+      this.state.failsafes.comms = 'CLEAR';
+      this.state.failsafes.geofence = 'CLEAR';
+      this.state.health.fc = 'HEALTHY';
+      this.state.health.esc = 'NORMAL';
+      this.state.health.alertsCount = 0;
+      if (this.state.waypoints[this.state.currentWaypointIndex]) {
+        this.state.lat = this.state.waypoints[this.state.currentWaypointIndex].lat;
+        this.state.lng = this.state.waypoints[this.state.currentWaypointIndex].lng;
+      }
+      this.logger.log('SAFETY', 'FAULT INJECTION CLEARED: All systems restored to NOMINAL.', 'SUCCESS');
+    }
     this.notify();
   }
 
