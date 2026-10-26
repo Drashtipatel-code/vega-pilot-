@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>VEGAPilot | Ground Control Station</title>
+  <meta name="description" content="VEGAPilot Ground Control Station - DJI-Grade Drone Mission & Telemetry Dashboard with Real Satellite Map, Failsafe Monitoring, and Waypoint Planning." />
+
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Leaflet CSS for OpenStreetMap / Satellite -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+  <!-- Aerospace & DJI-Grade GCS Stylesheet -->
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+
+<body>
+  <!-- Header Bar -->
+  <header>
+    <div class="brand-section">
+      <button class="mobile-menu-toggle" id="mobile-menu-btn" title="Open Navigation Menu">
+        <span>☰</span>
+      </button>
+      <div class="brand-logo-icon">▲</div>
+      <div class="brand-title-group">
+        <h1>VEGAPilot <span class="badge-tag">GCS v2.5</span></h1>
+        <p>NiDAR Competition · Navlakhi Arena Flight Deck</p>
+      </div>
+    </div>
+
+    <!-- Quick Status HUD Strip (Always visible on mobile & desktop like DJI Status Bar) -->
+    <div class="header-status-panel">
+      <div class="status-chip" id="header-connection-chip">
+        <span class="status-dot dot-green" id="header-status-dot"></span>
+        <span id="header-status-text">TELEMETRY ONLINE</span>
+      </div>
+      <div class="status-chip hide-mobile" id="header-sats-chip">
+        <span class="text-cyan">🛰️ <b id="hdr-sats-count">18 Sats</b></span>
+      </div>
+      <div class="clock-display hide-mobile" id="nav-time">--:--:--</div>
+      <button class="btn-sm btn-ghost hide-mobile" id="btn-toggle-comms" title="Toggle Telemetry Connection">Disconnect</button>
+    </div>
+  </header>
+
+  <!-- Failsafe Alert Banner (Dynamic) -->
+  <div class="failsafe-banner" id="failsafe-banner" style="display: none;">
+    <span id="failsafe-banner-text">CAUTION: System alert active</span>
+    <button class="btn-sm btn-danger" onclick="window.gcsTelemetry.triggerRTL()">Trigger RTL Now</button>
+  </div>
+
+  <!-- Main App Layout -->
+  <div class="app-layout">
+    <!-- Sidebar Navigation Drawer (Slide-out on mobile) -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-top-mobile-header show-mobile">
+        <span style="font-weight: 700; color: #fff;">Navigation Menu</span>
+        <button class="btn-icon-close" id="btn-close-sidebar">✕</button>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-item active" data-section="overview">
+          <span class="nav-icon">▦</span>
+          <span>Flight Overview</span>
+        </div>
+        <div class="nav-item" data-section="mission">
+          <span class="nav-icon">✈</span>
+          <span>Mission Planner</span>
+        </div>
+        <div class="nav-item" data-section="vehicle">
+          <span class="nav-icon">◉</span>
+          <span>Vehicle Health</span>
+        </div>
+        <div class="nav-item" data-section="logs">
+          <span class="nav-icon">▤</span>
+          <span>Flight Logs</span>
+        </div>
+        <div class="nav-item" data-section="config" id="nav-item-config">
+          <span class="nav-icon">⚙️</span>
+          <span>GCS Config</span>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="comms-link-card">
+          <div class="comms-row">
+            <span>Link RF <span class="info-help-btn" data-help="comms">?</span></span>
+            <span>915 MHz</span>
+          </div>
+          <div class="comms-row">
+            <span>Protocol</span>
+            <span>MAVLink 2.0</span>
+          </div>
+          <div class="comms-row">
+            <span>Signal RSSI</span>
+            <span id="hud-comms-rssi" class="text-green">98%</span>
+          </div>
+          <div class="comms-row">
+            <span>Latency</span>
+            <span id="hud-comms-latency">24 ms</span>
+          </div>
+        </div>
+        <div style="font-size: 11px; color: var(--text-muted); text-align: center;">
+          VEGAPilot Ground Station<br />Navlakhi Open Field Arena
+        </div>
+      </div>
+    </aside>
+
+    <!-- Sidebar Backdrop Overlay on Mobile -->
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+    <!-- Main Viewport Area -->
+    <main class="main-viewport">
+
+      <!-- SECTION 1: FLIGHT OVERVIEW -->
+      <section id="section-overview">
+        <!-- Top Action Bar (Desktop & Tablet) -->
+        <div class="page-header-row">
+          <div>
+            <h2>Flight Overview</h2>
+            <p>Real-time vehicle telemetry, satellite positioning, and failsafe supervision</p>
+          </div>
+          <div class="quick-flight-controls hide-mobile">
+            <select id="hud-mode-select" class="table-select" title="Switch Flight Mode">
+              <option value="AUTO">AUTO (Mission)</option>
+              <option value="GUIDED">GUIDED</option>
+              <option value="LOITER">LOITER (Hold)</option>
+              <option value="RTL">RTL (Return)</option>
+              <option value="LAND">LAND</option>
+              <option value="MANUAL">MANUAL</option>
+            </select>
+            <button class="btn-action btn-primary" id="btn-arm-toggle">Arm Vehicle</button>
+            <button class="btn-action btn-warning" id="btn-cmd-rtl" title="Return to Launch Point">
+              RTL <span class="info-help-btn" data-help="rtl">?</span>
+            </button>
+            <button class="btn-action btn-danger" id="btn-cmd-abort" title="Emergency Mission Abort">
+              ABORT <span class="info-help-btn" data-help="abort">?</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 4 Top HUD Cards -->
+        <div class="hud-grid">
+          <!-- 1. Battery Card -->
+          <div class="card">
+            <div class="metric-label">
+              <span>Battery Level <span class="info-help-btn" data-help="battery">?</span></span>
+              <span id="hud-battery-voltage" class="mono text-cyan">24.1V</span>
+            </div>
+            <div class="metric-value" id="hud-battery-percent">84%</div>
+            <div class="battery-bar-container">
+              <div class="battery-bar-fill" id="hud-battery-bar"></div>
+            </div>
+            <div class="metric-sub">
+              <span id="hud-battery-badge" class="text-green">● Good (6S LiPo)</span>
+              <span id="hud-battery-current" class="mono">12.8A · 308W <span class="info-help-btn" data-help="voltage">?</span></span>
+            </div>
+            <div class="metric-sub" style="margin-top: 4px;">
+              <span>Flight Time Left</span>
+              <span id="hud-battery-time" class="mono text-cyan">18m 45s</span>
+            </div>
+          </div>
+
+          <!-- 2. Altitude & Speed Card -->
+          <div class="card">
+            <div class="metric-label">
+              <span>Altitude (AGL) <span class="info-help-btn" data-help="altitude">?</span></span>
+              <span id="hud-heading-val" class="mono text-cyan">042° HDG <span class="info-help-btn" data-help="heading">?</span></span>
+            </div>
+            <div class="metric-value" id="hud-alt-value">12.5 m</div>
+            <div class="metric-sub">
+              <span>MSL: <b id="hud-alt-msl" class="mono">54.2m</b></span>
+              <span>V.Spd: <b id="hud-vspeed" class="mono">+0.1 m/s</b></span>
+            </div>
+            <div class="metric-sub" style="margin-top: 4px;">
+              <span>Ground Speed <span class="info-help-btn" data-help="speed">?</span></span>
+              <span id="hud-gspeed" class="mono text-cyan">3.8 m/s (14 km/h)</span>
+            </div>
+          </div>
+
+          <!-- 3. Flight Mode & Arm Status -->
+          <div class="card">
+            <div class="metric-label">
+              <span>Flight Mode <span class="info-help-btn" data-help="flightMode">?</span></span>
+              <span>Motor Status <span class="info-help-btn" data-help="armStatus">?</span></span>
+            </div>
+            <div class="metric-value text-cyan" id="hud-flight-mode">AUTO</div>
+            <div class="metric-sub">
+              <span>Arm Status</span>
+              <span id="hud-arm-status" class="value text-green arm-pulse" style="font-size: 14px; margin: 0;">ARMED</span>
+            </div>
+            <div class="metric-sub" style="margin-top: 6px;">
+              <span>Failsafe Status <span class="info-help-btn" data-help="failsafe">?</span></span>
+              <span id="fs-overall" class="text-green">● NOMINAL</span>
+            </div>
+          </div>
+
+          <!-- 4. GNSS & Positioning Card -->
+          <div class="card">
+            <div class="metric-label">
+              <span>GNSS Navigation <span class="info-help-btn" data-help="gnss">?</span></span>
+              <span id="hud-gnss-sats" class="mono text-cyan">18 Sats</span>
+            </div>
+            <div class="metric-value" style="font-size: 20px; line-height: 28px; margin-top: 14px;" id="hud-gnss-fix">● 3D DGPS Fix</div>
+            <div class="metric-sub">
+              <span>HDOP: <b id="hud-gnss-hdop" class="mono">0.76</b> <span class="info-help-btn" data-help="hdop">?</span></span>
+              <span>Lat: <b id="hud-lat" class="mono">22.298200</b></span>
+            </div>
+            <div class="metric-sub" style="margin-top: 4px;">
+              <span>Navlakhi Arena</span>
+              <span>Lng: <b id="hud-lng" class="mono">73.194800</b></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Middle Section: Tactical Arena Map & Vehicle Status -->
+        <div class="middle-split-layout">
+          <!-- Arena Map Card (DJI-Style Floating Controls) -->
+          <div class="card map-card">
+            <div class="map-card-topbar">
+              <div class="card-title">
+                <span>Tactical Arena Flight Deck</span>
+                <span class="badge-tag" id="map-current-layer-label">🛰️ Real Satellite</span>
+              </div>
+              <div class="small text-muted hide-mobile">
+                Geofence: Navlakhi Arena (90m x 90m) <span class="info-help-btn" data-help="geofence">?</span>
+              </div>
+            </div>
+
+            <!-- Viewport Container with DJI Floating Action Buttons (FABs) -->
+            <div class="map-viewport-wrapper">
+              <!-- Real Interactive Leaflet OpenStreetMap View -->
+              <div id="map-view"></div>
+
+              <!-- DJI-Style Floating Action Buttons (FABs) -->
+              <div class="dji-map-controls">
+                <button class="dji-fab" id="fab-map-layer" title="Switch Map Layer (Satellite / Streets / Vibrant)">
+                  <span>🛰️</span>
+                </button>
+                <button class="dji-fab active" id="fab-follow" title="Lock & Follow Drone">
+                  <span>🎯</span>
+                </button>
+                <button class="dji-fab" id="fab-fit-arena" title="Fit Entire Arena Geofence">
+                  <span>⛶</span>
+                </button>
+                <button class="dji-fab" id="fab-toggle-radar" title="Toggle Synthetic Arena Grid">
+                  <span>📡</span>
+                </button>
+              </div>
+
+              <!-- Alternative 2D Synthetic Arena Grid (Switchable) -->
+              <div id="arena-grid-view">
+                <div class="arena-zone-box">
+                  <span>NiDAR Competition Arena</span>
+                  <div class="arena-crosshair-center"></div>
+                </div>
+                <div class="arena-drone-avatar" id="arena-drone-icon">✈</div>
+                <div class="arena-hud-overlay" id="arena-radar-heading">042° HDG · 12.5m AGL</div>
+              </div>
+            </div>
+
+            <div class="map-card-bottom-info">
+              <span>● Home Point: <b>H (Takeoff Ground)</b></span>
+              <span>Mission: <b>5 Waypoints Planned</b> <span class="info-help-btn" data-help="mission">?</span></span>
+            </div>
+          </div>
+
+          <!-- Vehicle Status & Safety Failsafes -->
+          <div class="card">
+            <div class="card-title" style="margin-bottom: 12px;">
+              <span>Safety & Failsafe Status</span>
+              <span class="info-help-btn" data-help="failsafe">?</span>
+            </div>
+            <div class="rowline">
+              <span>GNSS Navigation</span>
+              <strong class="text-green">● 3D Fix (RTK Ready)</strong>
+            </div>
+            <div class="rowline">
+              <span>Telemetry Data Link</span>
+              <strong class="text-green">● Active & Streaming</strong>
+            </div>
+            <div class="rowline">
+              <span>Battery Failsafe</span>
+              <strong id="fs-battery" class="text-green">● CLEAR</strong>
+            </div>
+            <div class="rowline">
+              <span>Comms Loss Failsafe</span>
+              <strong id="fs-comms" class="text-green">● CLEAR</strong>
+            </div>
+            <div class="rowline">
+              <span>Geofence Boundary</span>
+              <strong id="fs-geofence" class="text-green">● CLEAR</strong>
+            </div>
+            <div class="rowline">
+              <span>Latitude</span>
+              <strong id="disp-lat" class="mono">22.298200° N</strong>
+            </div>
+            <div class="rowline">
+              <span>Longitude</span>
+              <strong id="disp-lng" class="mono">73.194800° E</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lower Section: Mission Progress & System Health -->
+        <div class="middle-split-layout">
+          <!-- Mission Progress Card -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <span>Mission Monitoring</span>
+                <span class="info-help-btn" data-help="mission">?</span>
+              </div>
+              <span class="badge-tag" id="hud-mission-status">IN PROGRESS</span>
+            </div>
+            <div class="rowline">
+              <span>Active Target Waypoint</span>
+              <strong id="hud-mission-wp" class="text-cyan">2 / 5</strong>
+            </div>
+            <div class="rowline">
+              <span>Distance to Next WP</span>
+              <strong id="hud-mission-dist" class="mono">14.8 m</strong>
+            </div>
+            <div class="rowline">
+              <span>Estimated Time (ETA)</span>
+              <strong id="hud-mission-eta" class="mono">45s</strong>
+            </div>
+
+            <div class="progress-bar">
+              <div class="progress-bar-fill" id="hud-mission-bar"></div>
+            </div>
+            <div class="small text-muted" style="display: flex; justify-content: space-between; margin-bottom: 14px;">
+              <span>Completion</span>
+              <span id="hud-mission-pct" class="mono text-cyan">40%</span>
+            </div>
+
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button class="btn-control btn-warning" id="btn-mission-play-pause">
+                <span>⏸ Pause Mission</span>
+              </button>
+              <button class="btn-ghost" id="btn-mission-skip">Skip WP</button>
+              <button class="btn-ghost" id="btn-mission-restart">Restart</button>
+            </div>
+          </div>
+
+          <!-- System Health Card -->
+          <div class="card">
+            <div class="card-title" style="margin-bottom: 12px;">System Diagnostics</div>
+            <div class="rowline">
+              <span>Flight Controller</span>
+              <strong id="health-fc" class="text-green">● OK (IMU / Baro / Mag)</strong>
+            </div>
+            <div class="rowline">
+              <span>Battery Status</span>
+              <strong id="health-battery" class="text-green">● Normal (6S Pack)</strong>
+            </div>
+            <div class="rowline">
+              <span>Navigation Sensor</span>
+              <strong id="health-nav" class="text-green">● RTK / 3D Fix Ready</strong>
+            </div>
+            <div class="rowline">
+              <span>EKF 3D Filter</span>
+              <strong class="text-green">● Healthy</strong>
+            </div>
+            <div class="rowline">
+              <span>Active System Alerts</span>
+              <strong id="health-alerts-count" class="mono">0 Alerts</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Events Card -->
+        <div class="card" style="margin-top: 18px;">
+          <div class="card-header">
+            <div class="card-title">Live Event Stream</div>
+            <button class="btn-sm btn-ghost" onclick="document.querySelector('[data-section=\'logs\']').click()">View All Logs →</button>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 100px;">Timestamp</th>
+                  <th style="width: 80px;">Level</th>
+                  <th style="width: 110px;">Subsystem</th>
+                  <th>Message</th>
+                </tr>
+              </thead>
+              <tbody id="logs-tbody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 2: MISSION PLANNER -->
+      <section id="section-mission" style="display: none;">
+        <div class="page-header-row">
+          <div>
+            <h2>Mission Planner & Waypoints</h2>
+            <p>Configure autonomous waypoints, upload flight plans, or load preset patterns</p>
+          </div>
+          <div class="quick-flight-controls">
+            <input type="file" id="mission-file-input" accept=".json,.plan" style="display: none;" />
+            <button class="btn-ghost" onclick="document.getElementById('mission-file-input').click()">📁 Upload Mission</button>
+            <button class="btn-ghost" id="btn-export-mission">💾 Export Mission</button>
+            <select id="mission-preset-select" class="table-select">
+              <option value="default">Preset: Navlakhi 5-Point</option>
+              <option value="perimeter">Preset: Perimeter Boundary Scan</option>
+              <option value="cross_grid">Preset: Cross Grid Inspection</option>
+            </select>
+            <button class="btn-primary" id="btn-add-wp">+ Add Waypoint</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Waypoints Route Table</div>
+            <span class="small text-muted">Edit latitude, longitude, altitude, and action directly in table.</span>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 50px;">WP</th>
+                  <th>Latitude</th>
+                  <th>Longitude</th>
+                  <th>Altitude</th>
+                  <th>Speed</th>
+                  <th>Action</th>
+                  <th style="width: 60px;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="waypoints-list-tbody">
+                <!-- Dynamically populated by mission.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 3: VEHICLE HEALTH -->
+      <section id="section-vehicle" style="display: none;">
+        <div class="page-header-row">
+          <div>
+            <h2>Vehicle Subsystems & Health</h2>
+            <p>Detailed sensor telemetry, avionics, motor ESCs, and diagnostics</p>
+          </div>
+        </div>
+
+        <div class="hud-grid">
+          <div class="card">
+            <div class="card-title">IMU / Gyroscope</div>
+            <div class="rowline"><span>Roll</span><strong class="mono">+2.1°</strong></div>
+            <div class="rowline"><span>Pitch</span><strong class="mono">+1.4°</strong></div>
+            <div class="rowline"><span>Vibration (X/Y/Z)</span><strong class="text-green">0.08g (Normal)</strong></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Barometer & Compass</div>
+            <div class="rowline"><span>Pressure</span><strong class="mono">1013.25 hPa</strong></div>
+            <div class="rowline"><span>Compass Interference</span><strong class="text-green">2.1% (Low)</strong></div>
+            <div class="rowline"><span>Ground Temp</span><strong class="mono">28.4°C</strong></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Power Distribution</div>
+            <div class="rowline"><span>Battery Capacity</span><strong class="mono">5000 mAh</strong></div>
+            <div class="rowline"><span>Consumed</span><strong class="mono">1680 mAh</strong></div>
+            <div class="rowline"><span>Average Cell</span><strong class="mono text-cyan">4.02 V</strong></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Motors & ESC</div>
+            <div class="rowline"><span>ESC Temp</span><strong class="mono">34°C</strong></div>
+            <div class="rowline"><span>Motor 1-4 RPM</span><strong class="mono text-green">4800 RPM</strong></div>
+            <div class="rowline"><span>ESC Telemetry</span><strong class="text-green">● Synchronized</strong></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 4: FLIGHT LOGS -->
+      <section id="section-logs" style="display: none;">
+        <div class="page-header-row">
+          <div>
+            <h2>Flight Logs & Event History</h2>
+            <p>Audit trail of all vehicle state transitions, navigation events, and failsafes</p>
+          </div>
+          <div class="quick-flight-controls">
+            <input type="text" id="log-search-input" placeholder="Search logs..." style="width: 160px;" />
+            <button class="btn-ghost btn-log-filter active" data-level="ALL">All</button>
+            <button class="btn-ghost btn-log-filter" data-level="INFO">Info</button>
+            <button class="btn-ghost btn-log-filter" data-level="SUCCESS">Success</button>
+            <button class="btn-ghost btn-log-filter" data-level="WARN">Warnings</button>
+            <button class="btn-ghost btn-log-filter" data-level="ERROR">Errors</button>
+            <button class="btn-ghost" id="btn-export-csv">Export CSV</button>
+            <button class="btn-ghost" id="btn-export-json">Export JSON</button>
+            <button class="btn-danger" id="btn-clear-logs">Clear</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Event Timeline</div>
+            <span class="badge-tag" id="logs-count-badge">0 events</span>
+          </div>
+          <div class="table-responsive" style="max-height: 520px; overflow-y: auto;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 110px;">Time</th>
+                  <th style="width: 90px;">Level</th>
+                  <th style="width: 120px;">Subsystem</th>
+                  <th>Details</th>
+                </tr>
+              </thead>
+              <tbody id="logs-tbody-full">
+                <!-- Dynamically rendered -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 5: REAL GCS & ARENA CONFIGURATION -->
+      <section id="section-config" style="display: none;">
+        <div class="page-header-row">
+          <div>
+            <h2>Real GCS & Arena Configuration</h2>
+            <p>Configure real-world GPS coordinates, custom arena geofence, and drone hardware limits</p>
+          </div>
+          <div class="quick-flight-controls">
+            <button class="btn-primary" id="btn-save-config">💾 Apply & Save Configuration</button>
+            <button class="btn-ghost" id="btn-reset-config">Reset Defaults</button>
+          </div>
+        </div>
+
+        <div class="middle-split-layout">
+          <!-- Real Arena & GPS Geofence -->
+          <div class="card">
+            <div class="card-title" style="margin-bottom: 14px;">📍 Real Arena & GPS Location</div>
+            
+            <div style="margin-bottom: 14px;">
+              <label class="metric-label" style="margin-bottom: 6px;">Location Preset</label>
+              <select id="cfg-preset-select" class="table-select" style="width: 100%; padding: 8px;">
+                <option value="vadodara">NiDAR Arena - Navlakhi Field (22.2982, 73.1948)</option>
+                <option value="ahmedabad">Gujarat Science City Field (23.0768, 72.4984)</option>
+                <option value="mumbai">IIT Bombay Aeromodelling Ground (19.1334, 72.9133)</option>
+                <option value="bengaluru">Bengaluru Drone Testing Range (13.0827, 77.5877)</option>
+                <option value="delhi">Delhi Drone Aerodrome (28.5562, 77.1000)</option>
+              </select>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+              <div>
+                <label class="metric-label" style="margin-bottom: 6px;">Arena Center Latitude</label>
+                <input type="number" step="0.000001" id="cfg-lat" value="22.298200" style="width: 100%; padding: 8px; font-family: var(--font-mono);" />
+              </div>
+              <div>
+                <label class="metric-label" style="margin-bottom: 6px;">Arena Center Longitude</label>
+                <input type="number" step="0.000001" id="cfg-lng" value="73.194800" style="width: 100%; padding: 8px; font-family: var(--font-mono);" />
+              </div>
+            </div>
+
+            <div style="margin-bottom: 14px;">
+              <button class="btn-ghost" id="btn-detect-gps" style="width: 100%; padding: 10px;">
+                📍 Detect My Real GPS Location (Browser Geolocation)
+              </button>
+              <div id="gps-status-feedback" class="small text-muted" style="margin-top: 6px; text-align: center;"></div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div>
+                <label class="metric-label" style="margin-bottom: 6px;">Arena Safety Radius</label>
+                <input type="number" min="10" max="500" id="cfg-radius" value="45" style="width: 100%; padding: 8px; font-family: var(--font-mono);" />
+                <span class="small text-muted">meters (creates boundary box)</span>
+              </div>
+              <div>
+                <label class="metric-label" style="margin-bottom: 6px;">Max Allowed Altitude</label>
+                <input type="number" min="2" max="120" id="cfg-max-alt" value="30" style="width: 100%; padding: 8px; font-family: var(--font-mono);" />
+                <span class="small text-muted">meters AGL</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Real Drone Hardware & Battery Specs -->
+          <div class="card">
+            <div class="card-title" style="margin-bottom: 14px;">🔋 Real Drone & Battery Hardware</div>
+
+            <div style="margin-bottom: 14px;">
+              <label class="metric-label" style="margin-bottom: 6px;">Battery Pack Chemistry & Cells</label>
+              <select id="cfg-cell-count" class="table-select" style="width: 100%; padding: 8px;">
+                <option value="6">6S LiPo (22.2V Nominal / 25.2V Peak)</option>
+                <option value="4">4S LiPo (14.8V Nominal / 16.8V Peak)</option>
+                <option value="3">3S LiPo (11.1V Nominal / 12.6V Peak)</option>
+              </select>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+              <div>
+                <label class="metric-label" style="margin-bottom: 6px;">Pack Capacity</label>
+                <input type="number" step="100" min="500" max="30000" id="cfg-battery-cap" value="5000" style="width: 100%; padding: 8px; font-family: var(--font-mono);" />
+                <span class="small text-muted">mAh</span>
+              </div>
+              <div>
+                <label class="metric-label" style="margin-bottom: 6px;">Low Battery Warning</label>
+                <input type="number" min="10" max="40" id="cfg-battery-low" value="25" style="width: 100%; padding: 8px; font-family: var(--font-mono);" />
+                <span class="small text-muted">% threshold</span>
+              </div>
+            </div>
+
+            <div style="margin-bottom: 14px;">
+              <label class="metric-label" style="margin-bottom: 6px;">Failsafe Breach Action</label>
+              <select id="cfg-fs-action" class="table-select" style="width: 100%; padding: 8px;">
+                <option value="RTL">RTL (Autonomous Return-to-Home)</option>
+                <option value="LAND">LAND (Descend Immediately)</option>
+                <option value="LOITER">LOITER (Hold Position & Alert)</option>
+              </select>
+            </div>
+
+            <div class="comms-link-card" style="margin-top: 18px;">
+              <div style="font-size: 12px; color: var(--accent-cyan); font-weight: 600; margin-bottom: 4px;">Configuration Persistence</div>
+              <p class="small text-muted">All settings are automatically saved locally and applied in real-time to the telemetry engine, map overlays, and failsafe monitors.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- DOCKED MOBILE BOTTOM FLIGHT DECK (Visible only on mobile for 1-thumb DJI control) -->
+  <div class="mobile-bottom-flight-bar show-mobile">
+    <button class="mobile-fab-btn btn-primary" id="mobile-btn-arm">
+      <span id="mobile-arm-label">ARM MOTORS</span>
+    </button>
+    <button class="mobile-fab-btn btn-warning" id="mobile-btn-rtl">
+      <span>RTL HOME</span>
+    </button>
+    <button class="mobile-fab-btn btn-danger" id="mobile-btn-abort">
+      <span>ABORT</span>
+    </button>
+  </div>
+
+  <!-- MODAL: SIMPLE-LANGUAGE [?] INFORMATION EXPLAINER -->
+  <div class="modal-backdrop" id="info-explainer-modal">
+    <div class="modal-dialog">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h3 id="info-modal-title" style="margin: 0; color: var(--accent-cyan);">Feature Information</h3>
+        <button class="btn-icon-close" id="btn-close-info-modal">✕</button>
+      </div>
+      <p id="info-modal-text" style="font-size: 14px; line-height: 1.6; color: var(--text-primary); margin-bottom: 20px;">
+        Information content here.
+      </p>
+      <div class="modal-btn-row">
+        <button class="btn-primary" id="btn-info-got-it" style="width: 100%;">Understood / Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: SAFETY ARMING CONFIRMATION -->
+  <div class="modal-backdrop" id="arm-safety-modal">
+    <div class="modal-dialog">
+      <h3>⚠️ Safety Arming Confirmation</h3>
+      <p>Arming the vehicle will energize all motor ESCs and spin the propellers. Ensure the flight arena is clear of personnel.</p>
+      
+      <div class="arming-slider-wrapper">
+        <div class="slide-instruction">Slide right to confirm arming</div>
+        <input type="range" min="0" max="100" value="0" class="safety-slider" id="arm-slide-range" />
+      </div>
+
+      <div class="modal-btn-row">
+        <button class="btn-ghost" id="btn-cancel-arm">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: EMERGENCY MISSION ABORT -->
+  <div class="modal-backdrop" id="abort-safety-modal">
+    <div class="modal-dialog">
+      <h3 style="color: var(--accent-red);">🛑 Emergency Mission Abort</h3>
+      <p>Select the immediate action to take. Ensure you choose the safest option for the surrounding arena.</p>
+
+      <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+        <button class="btn-warning" id="btn-abort-land" style="padding: 12px;">
+          <strong>LAND NOW</strong> (Controlled immediate descent at current position)
+        </button>
+        <button class="btn-danger" id="btn-abort-kill" style="padding: 12px;">
+          <strong>EMERGENCY MOTOR CUT</strong> (Stops motors instantly - vehicle will drop)
+        </button>
+      </div>
+
+      <div class="modal-btn-row">
+        <button class="btn-ghost" id="btn-cancel-abort">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <!-- Application Subsystems -->
+  <script src="js/config.js"></script>
+  <script src="js/logs.js"></script>
+  <script src="js/telemetry.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/mission.js"></script>
+  <script src="js/app.js"></script>
+
+  <script>
+    // Link logs table in Section 4 to the same subscription
+    window.addEventListener('load', () => {
+      const fullTbody = document.getElementById('logs-tbody-full');
+      if (fullTbody && window.gcsLogger) {
+        window.gcsLogger.subscribe((logs) => {
+          if (logs.length === 0) {
+            fullTbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted" style="padding: 24px;">No flight log records found.</td></tr>`;
+            return;
+          }
+          fullTbody.innerHTML = logs.map(entry => {
+            let badgeClass = 'log-badge-info';
+            if (entry.level === 'SUCCESS') badgeClass = 'log-badge-success';
+            if (entry.level === 'WARN') badgeClass = 'log-badge-warn';
+            if (entry.level === 'ERROR') badgeClass = 'log-badge-error';
+
+            return `
+              <tr>
+                <td class="mono small">${entry.timeStr}</td>
+                <td><span class="log-badge ${badgeClass}">${entry.level}</span></td>
+                <td><strong>${entry.subsystem}</strong></td>
+                <td>${entry.message}</td>
+              </tr>
+            `;
+          }).join('');
+        });
+      }
+    });
+  </script>
+</body>
+</html>
